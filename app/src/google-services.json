@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "944849327224",
+    "project_id": "medapp-89cbd",
+    "storage_bucket": "medapp-89cbd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:944849327224:android:8a9c1a283b9d35afa5498d",
+        "android_client_info": {
+          "package_name": "ph.edu.auf.student.lacson.joseph.medapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDzImoYPHzULpSY8wVKPFxbf2yO_TJO3hI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -10,5 +10,7 @@ data class HealthTip(
     val title: String = "",
     val description: String = "",
     val category: String = "",
+    val imageUrl: String?,
+    val sourceUrl: String?,
     val cachedTimestamp: Long = 0L
 )

@@ -13,7 +13,7 @@ import ph.edu.auf.student.lacson.joseph.medapp.data.local.entities.UserProfile
 
 @Database(
     entities = [UserProfile::class, HealthLog::class, HealthTip::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class MedAppDatabase : RoomDatabase() {
@@ -31,7 +31,9 @@ abstract class MedAppDatabase : RoomDatabase() {
                     context.applicationContext,
                     MedAppDatabase::class.java,
                     "medapp_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

@@ -7,7 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private const val BASE_URL = "https://api.api-ninjas.com/"
+    private const val API_NINJAS_BASE_URL = "https://api.api-ninjas.com/"
+    private const val NEWS_API_BASE_URL = "https://newsapi.org/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -20,11 +21,18 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
+    private val apiNinjasRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(API_NINJAS_BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    val apiService: ApiService = retrofit.create(ApiService::class.java)
+    private val newsApiRetrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(NEWS_API_BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val apiService: ApiService = apiNinjasRetrofit.create(ApiService::class.java)
+    val newsApiService: NewsApiService = newsApiRetrofit.create(NewsApiService::class.java)
 }

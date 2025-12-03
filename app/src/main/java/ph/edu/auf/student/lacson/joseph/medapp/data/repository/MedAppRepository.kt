@@ -10,6 +10,7 @@ import ph.edu.auf.student.lacson.joseph.medapp.data.local.MedAppDatabase
 import ph.edu.auf.student.lacson.joseph.medapp.data.local.entities.HealthLog
 import ph.edu.auf.student.lacson.joseph.medapp.data.local.entities.HealthTip
 import ph.edu.auf.student.lacson.joseph.medapp.data.local.entities.UserProfile
+import kotlin.random.Random
 
 class MedAppRepository(
     private val database: MedAppDatabase,
@@ -20,6 +21,11 @@ class MedAppRepository(
     private val userProfileDao = database.userProfileDao()
     private val healthLogDao = database.healthLogDao()
     private val healthTipDao = database.healthTipDao()
+
+    companion object {
+
+        private const val NEWS_API_KEY = "92e80bb46e804fb695e6dc4698f3cf3c"
+    }
 
     fun getCurrentUserId(): String? = auth.currentUser?.uid
 
@@ -124,24 +130,123 @@ class MedAppRepository(
         }
     }
 
+
     suspend fun fetchHealthTipsFromApi(): Result<List<HealthTip>> {
         return try {
             val tips = mutableListOf<HealthTip>()
-            repeat(5) {
-                val response = RetrofitClient.apiService.getHealthTip()
-                val tip = HealthTip(
-                    title = "Health Tip ${it + 1}",
-                    description = response.tip,
-                    category = "General Health",
-                    cachedTimestamp = System.currentTimeMillis()
-                )
-                tips.add(tip)
+
+            try {
+                if (NEWS_API_KEY.isNotBlank()) {
+                    // Randomize page for fresh articles each refresh (adjust range as needed)
+                    val page = Random.nextInt(1, 5)
+                    val newsResponse = RetrofitClient.newsApiService.getHealthNews(
+                        apiKey = NEWS_API_KEY,
+                        page = page
+                    )
+
+                    // Shuffle to vary ordering
+                    newsResponse.articles.shuffled().forEach { article ->
+                        tips.add(
+                            HealthTip(
+                                title = article.title,
+                                description = article.description ?: "No description available",
+                                category = "Health News",
+                                imageUrl = article.imageUrl,   // may be null; UI handles it
+                                sourceUrl = article.url,
+                                cachedTimestamp = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                } else {
+                    throw Exception("News API key not configured")
+                }
+            } catch (e: Exception) {
+                // Fallback to API Ninjas or sample tips
+                repeat(10) { index ->
+                    try {
+                        val response = RetrofitClient.apiService.getHealthTip()
+                        tips.add(
+                            HealthTip(
+                                title = "Daily Health Tip ${index + 1}",
+                                description = response.tip,
+                                category = "General Health",
+                                imageUrl = getPlaceholderImageUrl(index),
+                                sourceUrl = null,
+                                cachedTimestamp = System.currentTimeMillis()
+                            )
+                        )
+                    } catch (apiError: Exception) {
+                        tips.add(
+                            HealthTip(
+                                title = getSampleHealthTipTitle(index),
+                                description = getSampleHealthTipDescription(index),
+                                category = "General Health",
+                                imageUrl = getPlaceholderImageUrl(index),
+                                sourceUrl = null,
+                                cachedTimestamp = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
             }
-            healthTipDao.insertHealthTips(tips)
+
+            if (tips.isNotEmpty()) {
+                healthTipDao.deleteAllHealthTips()
+                healthTipDao.insertHealthTips(tips)
+            }
+
             Result.success(tips)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun getPlaceholderImageUrl(index: Int): String {
+        val healthImages = listOf(
+            "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800",
+            "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800",
+            "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800",
+            "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=800",
+            "https://images.unsplash.com/photo-1584515933487-779824d29309?w=800",
+            "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800",
+            "https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=800",
+            "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800",
+            "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800",
+            "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?w=800"
+        )
+        return healthImages[index % healthImages.size]
+    }
+
+    private fun getSampleHealthTipTitle(index: Int): String {
+        val titles = listOf(
+            "Stay Hydrated",
+            "Get Regular Exercise",
+            "Eat a Balanced Diet",
+            "Get Enough Sleep",
+            "Manage Stress",
+            "Regular Health Checkups",
+            "Practice Good Hygiene",
+            "Limit Screen Time",
+            "Stay Socially Connected",
+            "Practice Mindfulness"
+        )
+        return titles[index % titles.size]
+    }
+
+    private fun getSampleHealthTipDescription(index: Int): String {
+        val descriptions = listOf(
+            "Drinking adequate water throughout the day helps maintain body temperature, keeps joints lubricated, prevents infections, and delivers nutrients to cells.",
+            "Regular physical activity can improve your muscle strength and boost your endurance. Exercise helps deliver oxygen and nutrients to your tissues.",
+            "Eating a variety of foods from all food groups helps your body get the nutrients it needs. Focus on fruits, vegetables, whole grains, and lean proteins.",
+            "Quality sleep is essential for good health. Adults should aim for 7-9 hours of sleep per night for optimal health and wellbeing.",
+            "Chronic stress can affect your health. Practice relaxation techniques like deep breathing, meditation, or yoga to manage stress effectively.",
+            "Regular health screenings can help detect problems before they start. Schedule regular checkups with your healthcare provider.",
+            "Washing hands regularly, maintaining dental hygiene, and keeping your environment clean can prevent many illnesses and infections.",
+            "Excessive screen time can lead to eye strain, poor posture, and sleep issues. Take regular breaks and limit recreational screen time.",
+            "Maintaining strong social connections can improve mental health, boost immune function, and increase longevity.",
+            "Mindfulness and meditation can reduce stress, improve focus, and enhance emotional wellbeing. Practice daily for best results."
+        )
+        return descriptions[index % descriptions.size]
     }
 
     suspend fun getCachedHealthTips(): List<HealthTip> {
